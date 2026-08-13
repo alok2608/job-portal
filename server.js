@@ -29,7 +29,7 @@ info:{
 },
 servers:[
     {
-              url:"https://jobportal-2936.onrender.com"
+              url:process.env.API_URL || `http://localhost:${process.env.PORT || 8080}`
 
     }
 ]
