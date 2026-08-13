@@ -14,7 +14,7 @@ try {
     // }
     const existinguser = await userModel.findOne({email});
     if(existinguser){
-        next('"email already exists"');
+        return next('email already exists');
     }
 
     const user=await userModel.create({name,email,password});
@@ -38,19 +38,19 @@ try {
 }
 }
 export const loginController = async(req, res,next) =>{
+try{
 const {email,password} = req.body
 
 if(!email ||!password){
-    next('please enter email or password')
+    return next('please enter email or password')
 }
 const user= await userModel.findOne({email}).select("+password")
 if(!user){
-    next('invalid username or passowrd')
-
+    return next('invalid username or password')
 }
 const isMatch =await user.comparePassword(password)
 if(!isMatch){
-    next('invalid username or password')
+    return next('invalid username or password')
 }
 user.password=undefined;
 const token=user.createJWT();
@@ -59,4 +59,7 @@ res.status(200).json({
     message:'login Successfully',
     user,token
 })
+}catch(error){
+    next(error)
+}
 }

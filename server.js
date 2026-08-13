@@ -2,7 +2,7 @@ import express from 'express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from'swagger-ui-express';
 import dotenv from 'dotenv'
-import 'express-async-error'
+import 'express-async-errors'
 import connectdb from './config/db.js';
 import testRoutes from './routes/testRoutes.js'
 import cors from 'cors'
@@ -24,7 +24,7 @@ const option={
     definition:{
 openapi:"3.0.0",
 info:{
-    titile:"job portal Application",
+    title:"job portal Application",
     description:"node js job portal"
 },
 servers:[

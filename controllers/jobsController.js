@@ -2,17 +2,22 @@ import jobsModels from "../models/jobsModels.js";
 import mongoose, { startSession } from "mongoose";
 import moment from "moment";
 export const createJobController=async(req,res,next)=>{
+try{
 const {company,position}=req.body;
 
 if(!company || !position){
-    next('please provide all fields')
+    return next('please provide all fields')
 }
 
 req.body.createdBy=req.user.userId
 const job=await jobsModels.create(req.body);
 res.status(201).json({job});
+}catch(error){
+    next(error)
+}
 };
 export const getAllJobsController=async(req,res,next)=>{
+try{
    const {status,workType,search,sort}=req.query
    const queryObject={
     createdBy:req.user.userId
@@ -52,7 +57,7 @@ export const getAllJobsController=async(req,res,next)=>{
 
 
    //job count
-   const totaljob=await jobsModels.countDocuments(queryResult)
+   const totaljob=await jobsModels.countDocuments(queryObject)
    const nofpage=Math.ceil(totaljob/limit)
     const jobs=await queryResult
    res.status(200).json({
@@ -61,53 +66,61 @@ export const getAllJobsController=async(req,res,next)=>{
     nofpage
 
    })
+}catch(error){
+    next(error)
+}
 }
 export const updateJobController=async(req,res,next)=>{
+  try{
     const {id}=req.params;
     const {company,position}=req.body;
 
     if(!company ||!position){
-        next('please provide all fields')
+        return next('please provide all fields')
     }
     const job=await jobsModels.findOne({_id:id});
 
     if(!job){
-        next(`no jobs found with this id ${id}`);
+        return next(`no jobs found with this id ${id}`);
     }
-    if(!req.user.userId === job.createdBy.toString()){
-        next('you are not authorizd to update this job')
-        return 
+    if(req.user.userId !== job.createdBy.toString()){
+        return next('you are not authorizd to update this job')
     }
-    
+
     const updateJob=await jobsModels.findOneAndUpdate({_id:id},req.body,{
         new:true,
         runValidators:true
     })
     res.status(200).json({updateJob})
-
+  }catch(error){
+    next(error)
+  }
 };
 export const deletejobController=async(req,res,next)=>{
+ try{
    const {id}=req.params;
    const job=await jobsModels.findOne({_id:id})
 
    if(!job){
-    next(`no job is found this id ${id}`)
+    return next(`no job is found this id ${id}`)
    }
-   if(!req.user.userId === job.createdBy.toString()){
-    next('you are not authrize to delete this ')
-    return
+   if(req.user.userId !== job.createdBy.toString()){
+    return next('you are not authrize to delete this ')
    }
    await job.deleteOne()
    res.status(200).json({message:"job deleted successfully"})
-
+ }catch(error){
+    next(error)
+ }
 }
 export const getJobStatsController=async(req,res,next)=>{
+  try{
     const stats=await jobsModels.aggregate([
         {
             $match:{
                 createdBy:new mongoose.Types.ObjectId(req.user.userId)
             }
-            
+
         },{
             $group:{
                 _id:`$status`,
@@ -115,11 +128,14 @@ export const getJobStatsController=async(req,res,next)=>{
             }
         }
     ])
-    const defaultstats={
-        pending:stats.pending ||0,
-        reject:stats.reject||0,
-        interview:stats.interview||0
-    }
+    const defaultstats=stats.reduce((acc,item)=>{
+        acc[item._id]=item.count
+        return acc
+    },{
+        pending:0,
+        reject:0,
+        interview:0
+    })
     let monthlyApplication=await jobsModels.aggregate([
         {
             $match:{
@@ -145,4 +161,7 @@ export const getJobStatsController=async(req,res,next)=>{
         return {date,count}
     })
     res.status(200).json({totalJob:stats.length,stats,defaultstats,monthlyApplication})
+  }catch(error){
+    next(error)
+  }
 }
